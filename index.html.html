@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>☁️ 몽글몽글 드로잉 ☁️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <style>
+        :root { 
+            /* 분홍 계열을 하늘색 계열로 변경 */
+            --soft-red: #74b9ff; --soft-blue: #a29bfe; 
+            --soft-yellow: #ffeaa7; --soft-green: #55efc4; 
+            --soft-purple: #81ecec;
+            --bg-gradient: linear-gradient(120deg, #e0f7fa 0%, #ffffff 100%);
+        }
+        
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; display: flex; flex-direction: column; 
+            height: 100vh; width: 100vw; font-family: 'Gaegu', cursive;
+            background: var(--bg-gradient); user-select: none; overflow: hidden; 
+        }
+
+        .header { 
+            height: 60px; background: var(--soft-red); color: white; 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            border-bottom: 5px dashed rgba(255,255,255,0.3); flex-shrink: 0;
+        }
+        .header h1 { font-family: 'Jua', sans-serif; font-size: 24px; margin: 0; flex: 1; text-align: center; }
+
+        .page-setting-group { position: relative; display: inline-block; margin-right: 10px; }
+        .page-setting-btn, .undo-redo-btn, .header-tool-btn { 
+            padding: 5px 12px; border-radius: 12px; border: 2px solid white; cursor: pointer;
+            font-family: 'Gaegu'; font-size: 14px; font-weight: bold; color: white; background: rgba(255,255,255,0.2);
+            transition: 0.2s;
+        }
+        .undo-redo-btn:hover, .header-tool-btn:hover { background: rgba(255,255,255,0.4); }
+        .undo-redo-btn:active, .header-tool-btn:active { transform: scale(0.95); }
+
+        /* 저장/다시그리기 상단 배치를 위한 여백 조절 */
+        .left-controls { display: flex; align-items: center; gap: 5px; width: 500px; }
+
+        .page-dropdown {
+            display: none; position: absolute; top: 100%; left: 0; background: white;
+            min-width: 120px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 12px;
+            padding: 5px 0; z-index: 1000; margin-top: 5px;
+        }
+        .page-setting-group:hover .page-dropdown { display: block; }
+        .page-item { padding: 10px 15px; font-size: 14px; color: #333; cursor: pointer; text-align: left; }
+        .page-item:hover { background: #f1f3f5; color: var(--soft-red); }
+
+        .theme-group { display: flex; gap: 5px; }
+        .theme-btn { padding: 5px 10px; border-radius: 12px; border: 2px solid white; cursor: pointer; font-family: 'Gaegu'; font-size: 14px; font-weight: bold; color: white; }
+
+        .main-container { display: flex; flex: 1; padding: 10px; gap: 10px; overflow: hidden; }
+
+        .brick-panel { 
+            background: white; border: 4px solid #b2bec3; border-radius: 30px; 
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.05); display: flex; flex-direction: column; padding: 12px; 
+        }
+
+        .toolbar { width: 300px; flex-shrink: 0; overflow-y: auto; gap: 10px; }
+        .panel-title { background: #00cec9; color: white; padding: 4px 15px; border-radius: 20px; font-size: 18px; font-weight: bold; text-align: center; }
+        
+        .brush-types { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .type-btn { 
+            height: 70px; border: 2px solid #ddd; border-radius: 15px; cursor: pointer;
+            background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: 0.2s; color: #444; padding: 5px 0;
+        }
+        .type-btn .material-symbols-outlined { font-size: 28px; }
+        .type-btn .tool-label { font-size: 11px; font-weight: bold; margin-top: 4px; font-family: 'Gaegu'; pointer-events: none; }
+
+        .type-btn.active { border-color: #0984e3; background: #e3f2fd; color: #0984e3; transform: scale(1.05); }
+
+        .shape-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 5px; }
+        .shape-btn { font-size: 18px; padding: 5px; border: 2px solid #eee; background: white; border-radius: 10px; cursor: pointer; }
+        .shape-btn.active { border-color: var(--soft-blue); background: #e3f2fd; }
+
+        .grid-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px; }
+        .grid-btn { padding: 8px 4px; border: 2px solid #eee; background: #fff; border-radius: 12px; cursor: pointer; font-family: 'Gaegu'; font-weight: bold; font-size: 14px; }
+
+        .stamp-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; 
+            background: #f9f9f9; padding: 8px; border-radius: 15px; border: 2px solid #eee; 
+            margin-bottom: 5px; max-height: 120px; overflow-y: auto;
+        }
+        .stamp-item { 
+            font-size: 22px; cursor: pointer; display: flex; justify-content: center; 
+            align-items: center; padding: 5px; border-radius: 8px; border: 2px solid transparent; transition: 0.2s;
+        }
+        .stamp-item:hover { background: #eee; }
+        .stamp-item.selected { background: #e8e4ff; border-color: var(--soft-purple); transform: scale(1.1); }
+        .stamp-cat-name { font-size: 14px; color: #666; margin-top: 8px; margin-left: 5px; font-weight: bold; }
+
+        .color-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 5px; }
+        .color-brick { width: 40px; height: 40px; border: 3px solid #eee; cursor: pointer; border-radius: 50%; transition: 0.2s; }
+        .active-color { border-color: #555 !important; transform: scale(1.1); box-shadow: 0 0 8px rgba(0,0,0,0.2); }
+        
+        .rainbow-picker { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; padding: 5px; border: 2px dashed #ccc; border-radius: 15px; }
+        .rainbow-picker input { width: 40px; height: 40px; border: none; cursor: pointer; background: none; }
+
+        .control-item { text-align: center; width: 100%; border-top: 1px solid #eee; padding-top: 8px; margin-top: 5px; }
+        .control-item label { font-size: 18px; font-weight: bold; color: #444; }
+        .control-item input { width: 100%; accent-color: var(--soft-red); cursor: pointer; }
+
+        .magic-drawing-panel { background: #f0f8ff; border-radius: 15px; border: 2px dashed #4D96FF; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .magic-item { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: bold; color: #333; }
+        .magic-item input { width: 18px; height: 18px; cursor: pointer; }
+
+        .tool-btn { width: 100%; padding: 8px; border: 3px solid #555; border-radius: 20px; cursor: pointer; font-family: 'Gaegu'; font-size: 18px; font-weight: bold; transition: 0.2s; }
+        .tool-btn:active { transform: scale(0.95); }
+
+        .canvas-panel { 
+            flex: 2; position: relative; padding: 0; background: #e0e0e0; border-color: var(--soft-yellow);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        #drawingCanvas { background: white; display: block; box-shadow: 0 0 15px rgba(0,0,0,0.1); position: relative; z-index: 1; touch-action: none; }
+        
+        #bgImageCanvas { position: absolute; pointer-events: none; z-index: 10; }
+        #guideCanvas { position: absolute; pointer-events: none; z-index: 2; }
+        #layoutCanvas { position: absolute; pointer-events: none; z-index: 3; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;
+        }
+        #confirmModal { z-index: 3000; } 
+        .modal-content { background: white; padding: 30px; border-radius: 30px; border: 5px solid var(--soft-red); text-align: center; width: 400px; }
+
+        .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .calendar-choice-btn { 
+            padding: 15px 5px; background: #fff; border: 2px solid #eee; border-radius: 20px; 
+            cursor: pointer; font-family: 'Jua', sans-serif; font-size: 20px; transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .calendar-choice-btn:hover { background: #fff9db; border-color: var(--soft-yellow); transform: translateY(-2px); }
+
+        .confirm-modal-content { border-color: var(--soft-purple); }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-yes { background: var(--soft-red); color: white; }
+        .btn-no { background: #eee; color: #555; }
+    </style>
+</head>
+<body>
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content confirm-modal-content">
+            <h2 id="confirmTitle" style="margin-top:0; font-family:'Jua';">💡 알림</h2>
+            <p id="confirmMessage" style="font-size: 18px; margin: 20px 0; line-height: 1.5;"></p>
+            <div class="btn-group">
+                <button id="confirmYes" class="tool-btn btn-yes">확인</button>
+                <button id="confirmNo" class="tool-btn btn-no">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="left-controls">
+            <div class="page-setting-group">
+                <button class="page-setting-btn">⚙️ 페이지 설정</button>
+                <div class="page-dropdown">
+                    <div class="page-item" onclick="askConfirm('그림이 지워질 수 있어요. 바꿀까요?', () => changeRatio(0))">⬜ 전체 크기</div>
+                    <div class="page-item" onclick="askConfirm('그림이 지워질 수 있어요. 바꿀까요?', () => changeRatio(16/9))">🎞️ 16 : 9</div>
+                    <div class="page-item" onclick="askConfirm('그림이 지워질 수 있어요. 바꿀까요?', () => changeRatio(4/3))">📺 4 : 3</div>
+                    <div class="page-item" onclick="askConfirm('그림이 지워질 수 있어요. 바꿀까요?', () => changeRatio(1))">⬛ 1 : 1</div>
+                    <div class="page-item" onclick="askConfirm('그림이 지워질 수 있어요. 바꿀까요?', () => changeRatio(3/4))">📱 3 : 4</div>
+                </div>
+            </div>
+            <button class="undo-redo-btn" onclick="undo()" title="뒤로가기">↩️</button>
+            <button class="undo-redo-btn" onclick="redo()" title="앞으로가기">↪️</button>
+            <button class="header-tool-btn" onclick="saveImage()" style="background:#0984e3;">📸 저장</button>
+            <button class="header-tool-btn" onclick="askConfirm('다 지울까요?', clearCanvas)" style="background:var(--soft-yellow); color:#333;">✨ 다시그리기</button>
+        </div> 
+        <h1>☁️ 몽글몽글 드로잉 ☁️</h1>
+        <div class="theme-group">
+            <button class="theme-btn" style="background:#ffb6c1" onclick="changeBackground('unicorn')">꿈</button>
+            <button class="theme-btn" style="background:#96e6a1" onclick="changeBackground('field')">들판</button>
+            <button class="theme-btn" style="background:#e6e9f0; color:#666" onclick="changeBackground('winter')">겨울</button>
+            <button class="theme-btn" style="background:#a1c4fd" onclick="changeBackground('ocean')">바다</button>
+            <button class="theme-btn" style="background:#fff; color:#74b9ff" onclick="changeBackground('white')">종이</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="brick-panel toolbar">
+            <div class="panel-title">🪄 도구 선택</div>
+            <div class="brush-types">
+                <button class="type-btn active" onclick="setBrushStyle('water', this)" title="수채화">
+                    <span class="material-symbols-outlined">water_drop</span>
+                    <span class="tool-label">수채화</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('pen', this)" title="연필">
+                    <span class="material-symbols-outlined">edit</span>
+                    <span class="tool-label">연필</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('crayon', this)" title="크레파스">
+                    <span class="material-symbols-outlined">colorize</span>
+                    <span class="tool-label">크레용</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('bucket', this)" title="페인트통">
+                    <span class="material-symbols-outlined">format_ink_highlighter</span>
+                    <span class="tool-label">채우기</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('eraser', this)" title="지우개">
+                    <span class="material-symbols-outlined">mop</span>
+                    <span class="tool-label">지우개</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('shape', this)" title="도형 그리기">
+                    <span class="material-symbols-outlined">category</span>
+                    <span class="tool-label">도형</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('magicStamp', this)" title="스탬프">
+                    <span class="material-symbols-outlined">verified</span>
+                    <span class="tool-label">스탬프</span>
+                </button>
+                <button class="type-btn" onclick="setBrushStyle('layout', this)" title="칸 레이아웃">
+                    <span class="material-symbols-outlined">grid_view</span>
+                    <span class="tool-label">칸나누기</span>
+                </button>
+                <button class="type-btn" onclick="openCalendarModal()" style="background: #fff9db;" title="달력 배경">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    <span class="tool-label">달력</span>
+                </button>
+                <button class="type-btn" id="pixelToolBtn" onclick="handlePixelBtnClick(this)" style="background: #e3f2fd;" title="픽셀판">
+                    <span class="material-symbols-outlined">apps</span>
+                    <span class="tool-label">픽셀판</span>
+                </button>
+            </div>
+
+            <div id="toolSettings">
+                <div id="pixelSettings" style="display:none;">
+                    <div class="panel-title" style="background: var(--soft-blue); margin-top: 10px;">🧱 픽셀판 관리</div>
+                    <button class="grid-btn" style="width:100%; margin-top:5px; padding:10px;" onclick="openPixelModal()">⚙️ 그리드 크기 변경</button>
+                </div>
+                <div id="layoutSettings" style="display:none;">
+                    <div class="panel-title" style="background: var(--soft-purple); margin-top: 10px;">🏁 웹툰 칸 나누기</div>
+                    <div class="grid-group">
+                        <button class="grid-btn" onclick="drawLayout(4)">🏁 4칸</button>
+                        <button class="grid-btn" onclick="drawLayout(6)">🏁 6칸</button>
+                        <button class="grid-btn" onclick="drawLayout(8)">🏁 8칸</button>
+                    </div>
+                </div>
+                <div id="magicDrawingArea">
+                    <div class="panel-title" style="background: var(--soft-purple); margin-top: 10px;">✨ 매직 드로잉</div>
+                    <div class="magic-drawing-panel">
+                        <div class="magic-item"><span>↔️ 좌우 대칭</span><input type="checkbox" id="symV" onchange="drawGuides()"></div>
+                        <div class="magic-item"><span>↕️ 상하 대칭</span><input type="checkbox" id="symH" onchange="drawGuides()"></div>
+                    </div>
+                </div>
+                <div id="shapeSettings" style="display:none;">
+                    <div class="panel-title" style="background: var(--soft-blue); margin-top: 10px;">📏 도형 모양</div>
+                    <div class="shape-group">
+                        <button class="shape-btn active" onclick="selectShape('circle', this)">🔴</button>
+                        <button class="shape-btn" onclick="selectShape('triangle', this)">🔺</button>
+                        <button class="shape-btn" onclick="selectShape('rect', this)">⬛</button>
+                        <button class="shape-btn" onclick="selectShape('line', this)">📏</button>
+                    </div>
+                </div>
+                <div id="magicStampSettings" style="display:none;">
+                    <div class="panel-title" style="background: var(--soft-purple); margin-top: 10px;">💮 마법 스탬프</div>
+                    <div id="stamps-container"></div>
+                </div>
+                <div id="colorSettings">
+                    <div class="panel-title" style="background: var(--soft-green); margin-top: 10px;">🎨 <span id="toolName">수채화</span> 설정</div>
+                    <div class="color-group" id="colorPalette"></div>
+                    <div class="rainbow-picker"><span>🌈 무지개:</span><input type="color" id="customColor" onchange="selectCustomColor(this.value)"></div>
+                </div>
+                <div id="sizeControl" class="control-item">
+                    <label><span id="sizeLabel">크기</span>: <span id="sizeVal">20</span></label>
+                    <input type="range" id="brushSize" min="1" max="150" value="20" oninput="updateBrushSize(this.value)">
+                </div>
+                <div id="alphaControl" class="control-item">
+                    <label>진하기: <span id="alphaVal">0.3</span></label>
+                    <input type="range" id="brushAlpha" min="0.1" max="1.0" step="0.05" value="0.3" oninput="updateAlpha(this.value)">
+                </div>
+            </div>
+
+            <div style="padding: 10px; border: 2px dashed #ffa502; border-radius: 15px; margin-top: 5px;">
+                <input type="file" id="imageLoader" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+                <div style="display: flex; gap: 5px;">
+                    <button class="tool-btn" style="background:#ffa502; color:white; font-size:15px; border:none; flex:3;" onclick="document.getElementById('imageLoader').click()">📁 도안 불러오기</button>
+                    <button id="deleteBgBtn" class="tool-btn" style="background:#ff7675; color:white; font-size:15px; border:none; flex:1; display:none;" onclick="askConfirm('도안을 지울까요?', removeBgImage)" title="삭제">🗑️</button>
+                </div>
+                <div id="bgAlphaControl" style="margin-top:10px; display:none;">
+                    <label style="font-size:14px; font-weight:bold;">👻 투명도: <span id="bgAlphaVal">100</span>%</label>
+                    <input type="range" min="0" max="100" value="100" style="width:100%; accent-color:#ffa502;" oninput="updateBgAlpha(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="brick-panel canvas-panel" id="canvasContainer">
+            <canvas id="bgImageCanvas"></canvas> 
+            <canvas id="drawingCanvas"></canvas>
+            <canvas id="guideCanvas"></canvas>
+            <canvas id="layoutCanvas"></canvas>
+        </div>
+
+        <div class="brick-panel mission-panel" style="width: 120px; align-items:center;">
+            <div class="panel-title" style="background:var(--soft-green); font-size: 15px; width: 100%;">미션</div>
+            <div id="missionEmoji" style="font-size: 50px; margin-top: 10px;">🍎</div>
+            <div style="font-size: 16px; font-weight: bold; text-align: center; margin: 10px 0;" id="missionName">사과</div>
+            <button class="tool-btn" style="font-size:14px;" onclick="nextMission()">다음 🚀</button>
+        </div>
+    </div>
+
+    <div id="calendarModal" class="modal-overlay" onclick="closeCalendarModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 style="margin-top:0; font-family:'Jua';">📅 2026년 몇 월을 그릴까요?</h2>
+            <div class="month-grid" id="monthGrid">
+                <script>
+                    for(let i=1; i<=12; i++) {
+                        document.write(`<button class="calendar-choice-btn" onclick="askCalendar(${i})">${i}월</button>`);
+                    }
+                </script>
+            </div>
+            <button class="tool-btn" style="margin-top:20px; background:#eee;" onclick="closeCalendarModal()">닫기</button>
+        </div>
+    </div>
+
+    <div id="pixelModal" class="modal-overlay" onclick="closePixelModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 style="margin-top:0;">🧱 픽셀판 크기 설정</h2>
+            <div style="margin: 20px 0; text-align: left;">
+                <div style="margin-bottom: 15px;"><label>가로 칸: <span id="pixelWVal">20</span></label><input type="range" id="pixelRangeW" min="5" max="100" value="20" style="width: 100%;" oninput="document.getElementById('pixelWVal').innerText = this.value"></div>
+                <div><label>세로 칸: <span id="pixelHVal">20</span></label><input type="range" id="pixelRangeH" min="5" max="100" value="20" style="width: 100%;" oninput="document.getElementById('pixelHVal').innerText = this.value"></div>
+            </div>
+            <button class="tool-btn" style="background: var(--soft-blue); color: white;" onclick="createPixelBoard()">준비 완료! 🚀</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const bgCanvas = document.getElementById('bgImageCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const guideCanvas = document.getElementById('guideCanvas');
+        const gctx = guideCanvas.getContext('2d');
+        const layoutCanvas = document.getElementById('layoutCanvas');
+        const lctx = layoutCanvas.getContext('2d', { willReadFrequently: true });
+        const colorPalette = document.getElementById('colorPalette');
+        const symV = document.getElementById('symV');
+        const symH = document.getElementById('symH');
+        
+        let painting = false;
+        let lastPoint = null;
+        let brushColor = '#2d3436';
+        let brushSize = 20;
+        let brushAlpha = 0.3;
+        let brushStyle = 'water'; 
+        let currentShape = 'circle';
+        let currentMagicStamp = '🌸';
+        let snapshot = null;
+        let currentRatio = 0; 
+        let historyStack = [], redoStack = [];
+        let pixelW = 0, pixelH = 0, isPixelModeInitialized = false; 
+        let loadedImage = null;
+        let bgAlpha = 1.0; 
+        let currentBgType = 'white';
+
+        const colors = ['#2d3436', '#636e72', '#b2bec3', '#ffffff', '#ff7675', '#d63031', '#ff9f43', '#e67e22', '#ffeaa7', '#fdcb6e', '#f1c40f', '#55efc4', '#00b894', '#2ecc71', '#74b9ff', '#0984e3', '#a29bfe', '#6c5ce7', '#fab1a0', '#e84393'];
+        const stampsData = { 
+            '🌸 봄': ['🌸','🌷','🌹','🌻','🌱','🍀','🍃','🌼','🐝','🦋','🐞','🐣','🐦','🍓','🍒','👒','🧺','🎈'],
+            '☀️ 여름': ['☀️','🌊','🍦','🍉','🍹','⛱️','🦀','🐠','🐋','🦈','🐬','🏄','🏊','🚤','🛶','🎐','🌴','🥤'],
+            '🍂 가을': ['🍂','🍁','🌾','🍎','🍇','🍐','🌰','🍄','🐿️','🦊','🦔','🦉','🎑','🏮','🪁','⛺','🪵','🍠'],
+            '❄️ 겨울': ['❄️','☃️','🎄','🎁','🧣','🧤','🎿','🔔','🦌','🐧','🐻','🛖','🔥','🍵','🍫','🥯','⛸️','🧶']
+        };
+        
+        const missions = [
+            { emoji: '🍎', name: '사과' },
+            { emoji: '😀', name: '웃는 얼굴' },
+            { emoji: '❤️', name: '하트' }
+        ];
+        let currentMissionIndex = 0;
+
+        function askConfirm(msg, onYes) {
+            const modal = document.getElementById('confirmModal');
+            const msgEl = document.getElementById('confirmMessage');
+            const yesBtn = document.getElementById('confirmYes');
+            const noBtn = document.getElementById('confirmNo');
+            msgEl.innerText = msg;
+            modal.style.display = 'flex';
+            const close = () => { modal.style.display = 'none'; };
+            yesBtn.onclick = () => { onYes(); close(); };
+            noBtn.onclick = close;
+        }
+
+        function askCalendar(month) {
+            askConfirm('달력 배경을 적용하시겠습니까?', () => selectMonth(month));
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        loadedImage = img;
+                        bgAlpha = 1.0; 
+                        document.getElementById('bgAlphaVal').innerText = "100";
+                        document.getElementById('bgAlphaControl').style.display = 'block';
+                        document.getElementById('deleteBgBtn').style.display = 'block';
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        lctx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height);
+                        resizeCanvas();
+                        drawBgImage();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeBgImage() {
+            loadedImage = null;
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            document.getElementById('bgAlphaControl').style.display = 'none';
+            document.getElementById('deleteBgBtn').style.display = 'none';
+            document.getElementById('imageLoader').value = "";
+        }
+
+        function drawBgImage() {
+            if (!loadedImage) return;
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgCtx.globalAlpha = bgAlpha;
+            const hRatio = bgCanvas.width / loadedImage.width;
+            const vRatio = bgCanvas.height / loadedImage.height;
+            const ratio = Math.min(hRatio, vRatio);
+            const cx = (bgCanvas.width - loadedImage.width * ratio) / 2;
+            const cy = (bgCanvas.height - loadedImage.height * ratio) / 2;
+            bgCtx.drawImage(loadedImage, 0, 0, loadedImage.width, loadedImage.height, cx, cy, loadedImage.width * ratio, loadedImage.height * ratio);
+        }
+
+        function updateBgAlpha(v) {
+            bgAlpha = v / 100;
+            document.getElementById('bgAlphaVal').innerText = v;
+            drawBgImage();
+        }
+
+        function saveState() { historyStack.push({ drawing: canvas.toDataURL(), layout: layoutCanvas.toDataURL() }); if (historyStack.length > 20) historyStack.shift(); redoStack = []; }
+        function restoreState(state) { 
+            if (!state) return; 
+            const imgD = new Image(); 
+            imgD.onload = () => { 
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
+                const prevComp = ctx.globalCompositeOperation;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(imgD, 0, 0); 
+                ctx.globalCompositeOperation = prevComp;
+            }; 
+            imgD.src = state.drawing; 
+            const imgL = new Image(); 
+            imgL.onload = () => { 
+                lctx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height); 
+                lctx.drawImage(imgL, 0, 0); 
+            }; 
+            imgL.src = state.layout; 
+        }
+        function undo() { if (historyStack.length === 0) return; redoStack.push({ drawing: canvas.toDataURL(), layout: layoutCanvas.toDataURL() }); restoreState(historyStack.pop()); }
+        function redo() { if (redoStack.length === 0) return; historyStack.push({ drawing: canvas.toDataURL(), layout: layoutCanvas.toDataURL() }); restoreState(redoStack.pop()); }
+
+        function openCalendarModal() { document.getElementById('calendarModal').style.display = 'flex'; }
+        function closeCalendarModal() { document.getElementById('calendarModal').style.display = 'none'; }
+        function openPixelModal() { document.getElementById('pixelModal').style.display = 'flex'; }
+        function closePixelModal() { document.getElementById('pixelModal').style.display = 'none'; }
+        function handlePixelBtnClick(el) { if (!isPixelModeInitialized) openPixelModal(); else setBrushStyle('pixel', el); }
+
+        function createPixelBoard() {
+            const w = parseInt(document.getElementById('pixelRangeW').value); const h = parseInt(document.getElementById('pixelRangeH').value);
+            saveState(); pixelW = w; pixelH = h; isPixelModeInitialized = true; brushStyle = 'pixel'; currentRatio = w / h; 
+            ctx.clearRect(0, 0, 5000, 5000); lctx.clearRect(0, 0, 5000, 5000); 
+            resizeCanvas(true);
+            ctx.strokeStyle = '#dcdde1'; ctx.lineWidth = 1; 
+            const cw = canvas.width / w, ch = canvas.height / h; ctx.beginPath(); for(let i=0; i<=w; i++) { ctx.moveTo(i*cw, 0); ctx.lineTo(i*cw, canvas.height); } for(let i=0; i<=h; i++) { ctx.moveTo(0, i*ch); ctx.lineTo(canvas.width, i*ch); } ctx.stroke();
+            setBrushStyle('pixel', document.getElementById('pixelToolBtn')); closePixelModal();
+        }
+
+        function selectMonth(m) {
+            saveState(); isPixelModeInitialized = false; currentRatio = 0; 
+            ctx.clearRect(0, 0, 5000, 5000); lctx.clearRect(0, 0, 5000, 5000); 
+            resizeCanvas(true); 
+            const year = 2026, padding = 60, headerH = 100, cw = (canvas.width - (padding * 2)) / 7, ch = (canvas.height - (padding * 2 + headerH)) / 6;
+            const days = ['일', '월', '화', '수', '목', '금', '토'], firstDay = new Date(year, m-1, 1).getDay(), lastDate = new Date(year, m, 0).getDate();
+            ctx.fillStyle = '#ff7675'; ctx.font = 'bold 45px Jua'; ctx.textAlign = 'center'; ctx.fillText(`${year}년 ${m}월`, canvas.width / 2, padding + 20);
+            ctx.font = '22px Jua'; days.forEach((day, i) => { ctx.fillStyle = (i === 0) ? '#ff7675' : (i === 6 ? '#74b9ff' : '#555'); ctx.fillText(day, padding + (i * cw) + (cw/2), padding + 75); });
+            ctx.strokeStyle = '#eee'; ctx.lineWidth = 1; ctx.beginPath(); for(let i=0; i<=7; i++) { ctx.moveTo(padding + i * cw, padding + 100); ctx.lineTo(padding + i * cw, canvas.height - padding); } for(let i=0; i<=6; i++) { ctx.moveTo(padding, padding + 100 + i * ch); ctx.lineTo(canvas.width - padding, padding + 100 + i * ch); } ctx.stroke();
+            ctx.font = '20px Gaegu'; ctx.textAlign = 'left'; let d = 1;
+            for (let r = 0; r < 6; r++) { for (let c = 0; c < 7; c++) { if ((r === 0 && c < firstDay) || (d > lastDate)) continue; ctx.fillStyle = (c === 0) ? '#ff7675' : (c === 6 ? '#74b9ff' : '#333'); ctx.fillText(d, padding + (c * cw) + 10, padding + 100 + (r * ch) + 25); d++; } }
+            closeCalendarModal();
+        }
+
+        function drawGuides() {
+            gctx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+            if (['shape', 'magicStamp', 'bucket', 'layout', 'pixel'].includes(brushStyle)) return;
+            gctx.setLineDash([10, 10]); gctx.strokeStyle = "rgba(77, 150, 255, 0.5)"; gctx.lineWidth = 2;
+            if (symV.checked) { gctx.beginPath(); gctx.moveTo(guideCanvas.width / 2, 0); gctx.lineTo(guideCanvas.width / 2, guideCanvas.height); gctx.stroke(); }
+            if (symH.checked) { gctx.beginPath(); gctx.moveTo(0, guideCanvas.height / 2); gctx.lineTo(guideCanvas.width, guideCanvas.height / 2); gctx.stroke(); }
+        }
+
+        function initPalette() {
+            colorPalette.innerHTML = '';
+            colors.forEach(color => {
+                const div = document.createElement('div'); div.className = 'color-brick' + (color === brushColor ? ' active-color' : ''); div.style.backgroundColor = color;
+                div.onclick = () => { brushColor = color; document.querySelectorAll('.color-brick').forEach(b => b.classList.remove('active-color')); div.classList.add('active-color'); };
+                colorPalette.appendChild(div);
+            });
+        }
+
+        function initStamps() {
+            const container = document.getElementById('stamps-container'); container.innerHTML = '';
+            for(let cat in stampsData) {
+                const label = document.createElement('div'); label.className = 'stamp-cat-name'; label.innerText = cat;
+                const grid = document.createElement('div'); grid.className = 'stamp-grid';
+                stampsData[cat].forEach(s => {
+                    const item = document.createElement('div'); item.className = 'stamp-item'; item.innerText = s;
+                    if(s === currentMagicStamp) item.classList.add('selected');
+                    item.onclick = () => { currentMagicStamp = s; document.querySelectorAll('.stamp-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); };
+                    grid.appendChild(item);
+                });
+                container.appendChild(label); container.appendChild(grid);
+            }
+        }
+
+        function resizeCanvas(skipRestore = false) {
+            let tempD = !skipRestore ? canvas.toDataURL() : null;
+            let tempL = !skipRestore ? layoutCanvas.toDataURL() : null;
+            const container = document.getElementById('canvasContainer'); 
+            const cw = container.clientWidth - 40, ch = container.clientHeight - 40;
+            let finalW, finalH;
+            if (currentRatio === 0) { finalW = cw; finalH = ch; } 
+            else { if (cw / ch > currentRatio) { finalH = ch; finalW = ch * currentRatio; } else { finalW = cw; finalH = cw / currentRatio; } }
+            canvas.width = finalW; canvas.height = finalH; bgCanvas.width = finalW; bgCanvas.height = finalH; 
+            guideCanvas.width = finalW; guideCanvas.height = finalH; layoutCanvas.width = finalW; layoutCanvas.height = finalH;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round'; 
+            if (tempD) { const imgD = new Image(); imgD.onload = () => ctx.drawImage(imgD, 0, 0, finalW, finalH); imgD.src = tempD; }
+            if (tempL) { const imgL = new Image(); imgL.onload = () => lctx.drawImage(imgL, 0, 0, finalW, finalH); imgL.src = tempL; }
+            drawGuides(); updateCursor(); drawBgImage();
+        }
+
+        function changeRatio(ratio) { saveState(); isPixelModeInitialized = false; currentRatio = ratio; resizeCanvas(true); ctx.clearRect(0, 0, canvas.width, canvas.height); lctx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height); }
+
+        function setBrushStyle(style, el) {
+            brushStyle = style; 
+            const displays = { colorSettings:'block', sizeControl:'block', alphaControl:'block', shapeSettings:'none', magicStampSettings:'none', layoutSettings:'none', pixelSettings:'none', magicDrawingArea:'none' };
+            if (['water','pen','crayon','eraser'].includes(style)) displays.magicDrawingArea = 'block';
+            if (style === 'eraser') { updateAlpha(1.0); displays.colorSettings = 'none'; displays.alphaControl = 'none'; } 
+            else if (style === 'bucket') { displays.sizeControl = 'none'; displays.alphaControl = 'none'; } 
+            else if (style === 'shape') { displays.shapeSettings = 'block'; displays.alphaControl = 'none'; brushAlpha = 1.0; } 
+            else if (style === 'magicStamp') { displays.colorSettings = 'none'; displays.alphaControl = 'none'; displays.magicStampSettings = 'block'; } 
+            else if (style === 'layout') { displays.layoutSettings = 'block'; displays.sizeControl = 'none'; displays.alphaControl = 'none'; } 
+            else if (style === 'pixel') { displays.pixelSettings = 'block'; displays.sizeControl = 'none'; displays.alphaControl = 'none'; }
+            for(let id in displays) document.getElementById(id).style.display = displays[id];
+            document.getElementById('toolName').innerText = el.title || "도구";
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); 
+            drawGuides(); updateCursor();
+        }
+
+        function drawLayout(num) { saveState(); lctx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height); lctx.strokeStyle = brushColor; lctx.lineWidth = 6; const p = 15, iw = layoutCanvas.width - (p*2), ih = layoutCanvas.height - (p*2), cols = 2, rows = num/cols, cw = iw/cols, ch = ih/rows; for(let r=0; r<rows; r++) for(let c=0; c<cols; c++) lctx.strokeRect(p + c*cw, p + r*ch, cw, ch); }
+        
+        function changeBackground(type) { 
+            currentBgType = type;
+            const bgs = { unicorn:"linear-gradient(to bottom, #fdfcfb 0%, #e2d1c3 100%)", field:"linear-gradient(to bottom, #96e6a1 0%, #d4fc79 100%)", winter:"linear-gradient(to bottom, #e6e9f0 0%, #eef1f5 100%)", ocean:"linear-gradient(to bottom, #a1c4fd 0%, #c2e9fb 100%)", white:"white" }; 
+            canvas.style.background = bgs[type] || "white"; 
+        }
+
+        function selectCustomColor(c) { brushColor = c; document.querySelectorAll('.color-brick').forEach(b => b.classList.remove('active-color')); }
+        function selectShape(shape, el) { currentShape = shape; document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); updateCursor(); }
+        
+        function updateCursor() { 
+            let e = '🖌️'; 
+            if (brushStyle === 'pen') e = '✏️'; if (brushStyle === 'crayon') e = '🖍️'; if (brushStyle === 'bucket') e = '🪣'; if (brushStyle === 'eraser') e = '🧹'; if (brushStyle === 'magicStamp') e = '💮'; if (brushStyle === 'layout') e = '🖼️'; if (brushStyle === 'pixel') e = '🧱'; 
+            if (brushStyle === 'shape') { const s = {circle:'🔴', triangle:'🔺', rect:'⬛', line:'📏'}; e = s[currentShape]; } 
+            canvas.style.cursor = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' style='font-size:32px'><text y='35'>${e}</text></svg>") 0 35, auto`; 
+        }
+
+        function startPosition(e) {
+            const rect = canvas.getBoundingClientRect(); 
+            const x = Math.round((e.clientX || (e.touches && e.touches[0].clientX)) - rect.left);
+            const y = Math.round((e.clientY || (e.touches && e.touches[0].clientY)) - rect.top);
+            saveState();
+            if (brushStyle === 'bucket') { floodFill(x, y, brushColor); return; }
+            if (brushStyle === 'magicStamp') { ctx.globalAlpha = 1.0; ctx.font = `${brushSize * 2}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(currentMagicStamp, x, y); return; }
+            painting = true; lastPoint = { x, y };
+            if (brushStyle === 'shape') snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height); else draw(e);
+        }
+
+        function draw(e) {
+            if (!painting || brushStyle === 'bucket' || brushStyle === 'layout') return;
+            const rect = canvas.getBoundingClientRect(); 
+            const cur = { x: (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left, y: (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top };
+            if (brushStyle === 'pixel') { const cw = canvas.width / pixelW, ch = canvas.height / pixelH, col = Math.floor(cur.x / cw), row = Math.floor(cur.y / ch); ctx.fillStyle = brushColor; ctx.fillRect(col * cw, row * ch, cw, ch); ctx.strokeStyle = '#dcdde1'; ctx.lineWidth = 1; ctx.strokeRect(col * cw, row * ch, cw, ch); return; }
+            ctx.globalAlpha = brushAlpha; ctx.fillStyle = brushColor; ctx.strokeStyle = brushColor; ctx.lineWidth = brushSize;
+            if (brushStyle === 'shape') {
+                ctx.putImageData(snapshot, 0, 0); ctx.beginPath();
+                if (currentShape === 'line') { ctx.moveTo(lastPoint.x, lastPoint.y); ctx.lineTo(cur.x, cur.y); } 
+                else if (currentShape === 'rect') ctx.strokeRect(lastPoint.x, lastPoint.y, cur.x - lastPoint.x, cur.y - lastPoint.y);
+                else if (currentShape === 'circle') ctx.arc(lastPoint.x, lastPoint.y, Math.hypot(cur.x - lastPoint.x, cur.y - lastPoint.y), 0, Math.PI * 2);
+                else if (currentShape === 'triangle') { ctx.moveTo(lastPoint.x, lastPoint.y); ctx.lineTo(cur.x, cur.y); ctx.lineTo(lastPoint.x * 2 - cur.x, cur.y); ctx.closePath(); }
+                ctx.stroke(); return;
+            }
+            const core = (lx, ly, cx, cy) => {
+                if (brushStyle === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(cx, cy); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
+                else if (brushStyle === 'water') { ctx.shadowBlur = brushSize/2; ctx.shadowColor = brushColor; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(cx, cy); ctx.stroke(); }
+                else { ctx.shadowBlur = 0; const d = Math.hypot(cx - lx, cy - ly), a = Math.atan2(cy - ly, cx - lx); for (let i = 0; i < d; i += 0.5) { const tx = lx + Math.cos(a) * i, ty = ly + Math.sin(a) * i; for (let j = 0; j < brushSize; j += 2.5) { const r = Math.random() * (brushSize / 2), ra = Math.random() * Math.PI * 2; ctx.fillRect(tx + Math.cos(ra) * r, ty + Math.sin(ra) * r, brushStyle==='crayon'?Math.random()*2+1:1.2, brushStyle==='crayon'?Math.random()*2+1:1.2); } } }
+            };
+            core(lastPoint.x, lastPoint.y, cur.x, cur.y);
+            if (symV.checked) core(canvas.width - lastPoint.x, lastPoint.y, canvas.width - cur.x, cur.y);
+            if (symH.checked) core(lastPoint.x, canvas.height - lastPoint.y, cur.x, canvas.height - cur.y);
+            if (symV.checked && symH.checked) core(canvas.width - lastPoint.x, canvas.height - lastPoint.y, canvas.width - cur.x, canvas.height - cur.y);
+            lastPoint = cur;
+        }
+
+        function floodFill(startX, startY, color) {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const lData = lctx.getImageData(0, 0, layoutCanvas.width, layoutCanvas.height);
+            const px = imgData.data, lpx = lData.data, pos = (startY * canvas.width + startX) * 4;
+            const sR = px[pos], sG = px[pos+1], sB = px[pos+2], sA = px[pos+3];
+            const res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+            if(!res) return; const fR = parseInt(res[1], 16), fG = parseInt(res[2], 16), fB = parseInt(res[3], 16);
+            if (sR === fR && sG === fG && sB === fB && sA === 255) return;
+            if (lpx[pos+3] > 100) return;
+            const stack = [[startX, startY]], w = canvas.width, h = canvas.height;
+            while (stack.length) {
+                const [x, y] = stack.pop(), p = (y * w + x) * 4;
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+                if (px[p] !== sR || px[p+1] !== sG || px[p+2] !== sB || px[p+3] !== sA || lpx[p+3] > 100) continue;
+                px[p] = fR; px[p+1] = fG; px[p+2] = fB; px[p+3] = 255;
+                stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function saveImage() { 
+            const t = document.createElement('canvas'); t.width = canvas.width; t.height = canvas.height; const tc = t.getContext('2d'); 
+            if(currentBgType === 'white') { tc.fillStyle = "white"; tc.fillRect(0, 0, t.width, t.height); } else { const bgs = { unicorn: ["#fdfcfb", "#e2d1c3"], field: ["#96e6a1", "#d4fc79"], winter: ["#e6e9f0", "#eef1f5"], ocean: ["#a1c4fd", "#c2e9fb"] }; const bc = bgs[currentBgType]; const g = tc.createLinearGradient(0, 0, 0, t.height); g.addColorStop(0, bc[0]); g.addColorStop(1, bc[1]); tc.fillStyle = g; tc.fillRect(0, 0, t.width, t.height); }
+            tc.globalAlpha = 1.0; tc.drawImage(canvas, 0, 0); 
+            if(loadedImage) { tc.globalAlpha = bgAlpha; const r = Math.min(t.width / loadedImage.width, t.height / loadedImage.height); tc.drawImage(loadedImage, 0, 0, loadedImage.width, loadedImage.height, (t.width - loadedImage.width * r) / 2, (t.height - loadedImage.height * r) / 2, loadedImage.width * r, loadedImage.height * r); }
+            tc.globalAlpha = 1.0; tc.drawImage(layoutCanvas, 0, 0); 
+            const link = document.createElement('a'); link.download = `몽글몽글_드로잉_${Date.now()}.png`; link.href = t.toDataURL(); link.click(); 
+        }
+
+        function updateBrushSize(v) { brushSize = parseInt(v); document.getElementById('sizeVal').innerText = v; }
+        function updateAlpha(v) { brushAlpha = parseFloat(v); document.getElementById('alphaVal').innerText = v; }
+        function clearCanvas() { saveState(); currentRatio = 0; resizeCanvas(true); ctx.clearRect(0, 0, canvas.width, canvas.height); lctx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height); bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height); canvas.style.background = "white"; currentBgType = 'white'; isPixelModeInitialized = false; loadedImage = null; document.getElementById('bgAlphaControl').style.display = 'none'; document.getElementById('deleteBgBtn').style.display = 'none'; }
+        function nextMission() { currentMissionIndex = (currentMissionIndex + 1) % missions.length; document.getElementById('missionEmoji').innerText = missions[currentMissionIndex].emoji; document.getElementById('missionName').innerText = missions[currentMissionIndex].name; }
+
+        initPalette(); initStamps();
+        canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); startPosition(e); });
+        canvas.addEventListener('pointermove', (e) => { if (painting) draw(e); });
+        window.addEventListener('pointerup', () => { painting = false; });
+        window.addEventListener('load', () => resizeCanvas(false));
+        window.addEventListener('resize', () => resizeCanvas(false));
+        window.addEventListener('keydown', (e) => { if (e.ctrlKey || e.metaKey) { if (e.key === 'z') { e.preventDefault(); undo(); } if (e.key === 'y') { e.preventDefault(); redo(); } } });
+    </script>
+</body>
+</html>
